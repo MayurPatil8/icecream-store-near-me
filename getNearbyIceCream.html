@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Geolocation</title>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
+    <meta charset="utf-8">    
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+      * element that contains the map. */
+      #map {
+      height: 100%;
+       
+      }
+      /* Optional: Makes the sample page fill the window. */
+      html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      } 
+      #description {
+        font-family: Roboto;
+        font-size: 15px;
+        font-weight: 300;
+      }
+
+      #infowindow-content .title {
+        font-weight: bold;
+      }
+
+      #infowindow-content {
+        display: none;
+      }
+
+      #map #infowindow-content {
+        display: inline;
+      }
+
+      .pac-card {
+        margin: 10px 10px 0 0;
+        border-radius: 2px 0 0 2px;
+        box-sizing: border-box;
+        -moz-box-sizing: border-box;
+        outline: none;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        background-color: #fff;
+        font-family: Roboto;
+      }
+
+      #pac-container {
+        padding-bottom: 12px;
+        margin-right: 12px;
+      }
+
+      .pac-controls {
+        display: inline-block;
+        padding: 5px 11px;
+      }
+
+      .pac-controls label {
+        font-family: Roboto;
+        font-size: 13px;
+        font-weight: 300;
+      }
+
+      #pac-input {
+      background-color: #fff;
+    font-family: Roboto;
+    font-size: 15px;
+    font-weight: 300;
+    margin-left: 0px;
+    padding: 0 11px 0 13px;
+    text-overflow: ellipsis;
+    width: 250px;
+    margin-top: 10px;
+    height: 29px;
+    border: 1px solid #fff;
+    border-radius: 4px;
+      }
+
+      #pac-input:focus {
+        border-color: #4d90fe;
+      }
+
+      #title {
+        color: #fff;
+        background-color: #4d90fe;
+        font-size: 25px;
+        font-weight: 500;
+        padding: 6px 12px;
+      }
+      #target {
+        width: 345px;
+      }
+
+      
+    </style>
+  </head>
+  <body>
+    <!-- <div class="container"> -->
+    <input id="pac-input" class="controls" type="text" placeholder="Search City for Icecream">  
+    <div id="map"><input type="text" placeholder="Search here"><span class="search glyphicon glyphicon-search"></span>
+</div>
+    <!-- </div> -->
+    <script>
+      // Note: This example requires that you consent to location sharing when
+      // prompted by your browser. If you see the error "The Geolocation service
+      // failed.", it means you probably did not give permission for the browser to
+      // locate you.
+      var map, infoWindow, 
+      markers = [];
+      function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+          center: {lat: 19.0759837, lng: 72.87765590000004},
+          zoom: 16
+        });
+        infoWindow = new google.maps.InfoWindow;
+      
+        // Try HTML5 geolocation.
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            pos = {
+              lat: position.coords.latitude,
+              lng: position.coords.longitude
+            };
+      
+            infoWindow.setPosition(pos);
+            infoWindow.setContent('Location found.');
+            infoWindow.open(map);
+            map.setCenter(pos);
+            locateIceCream(map,pos);
+      
+          }, function() {
+            handleLocationError(true, infoWindow, map.getCenter());
+          });
+        } else {
+          // Browser doesn't support Geolocation
+          handleLocationError(false, infoWindow, map.getCenter());
+        }
+        var input = document.getElementById('pac-input');
+        var searchBox = new google.maps.places.SearchBox(input);
+        map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+        // Bias the SearchBox results towards current map's viewport.
+        map.addListener('bounds_changed', function() {
+          searchBox.setBounds(map.getBounds());
+        });
+
+        searchBox.addListener('places_changed', function() {
+        var places = searchBox.getPlaces(),
+        lat = searchBox.getPlaces()[0].geometry.location.lat(),
+        lng = searchBox.getPlaces()[0].geometry.location.lng();
+        map.setCenter(new google.maps.LatLng(lat, lng));
+        pos = {
+            lat: lat,
+            lng: lng
+        };
+        infoWindow.setPosition(pos);
+        infoWindow.setContent('Location found.');
+        infoWindow.open(map);
+        locateIceCream(map, pos)
+
+        });
+      } 
+      function locateIceCream(map,pos){
+        places = new google.maps.places.PlacesService(map);
+        var markerIcon  = {
+          url: 'ice-cream-map@1x.png',
+          size: new google.maps.Size(60, 60),
+          origin: new google.maps.Point(0, 0),
+          anchor: new google.maps.Point(12, 10),
+          scaledSize: new google.maps.Size(30, 30)
+        };
+        places.textSearch({location:pos, radius:1500, query:'Ice cream shop'}, callback); 
+        function callback(results, status){
+          //clearResults(results);
+          clearMarkers();
+          console.log(results);
+          markers = [];
+      
+          if (status === google.maps.places.PlacesServiceStatus.OK) {
+           // clearResults();
+            //clearMarkers();
+          // Create a marker for each hotel found, and
+          // assign a letter of the alphabetic to each marker icon.
+            for (var i = 0; i < results.length; i++) {
+              //var markerLetter = String.fromCharCode('A'.charCodeAt(0) + (i % 26));
+              
+              // Use marker animation to drop the icons incrementally on the map.
+              markers = new google.maps.Marker({
+              position: new google.maps.LatLng(results[i].geometry.location.lat(), results[i].geometry.location.lng()),               
+              icon: markerIcon,
+              map:map
+            });
+            // If the user clicks a hotel marker, show the details of that hotel
+            // in an info window.
+      
+            //setTimeout(dropMarker(i), i * 100);
+            //addResult(results[i], i);
+          }
+        }          
+        } 
+      }
+      
+      
+      function clearMarkers() {
+        for (var i = 0; i < markers.length; i++) {
+          if (markers[i]) {
+            markers[i].setMap(null);
+          }
+        }
+        markers = [];
+      }
+      
+      // function clearResults(results) {
+      //   //var results = document.getElementById('results');
+      //   while (results.childNodes[0]) {
+      //     results.removeChild(results.childNodes[0]);
+      //   }
+      // }
+      
+      
+      
+      
+      function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+        infoWindow.setPosition(pos);
+        infoWindow.setContent(browserHasGeolocation ?
+                              'Error: The Geolocation service failed.' :
+                              'Error: Your browser doesn\'t support geolocation.');
+        infoWindow.open(map);
+      }
+    </script>
+    <script async defer
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBwMh07oJLiCVRHzgAgYE5JXlsanwRy9kU&libraries=places&callback=initMap"></script>
+  </body>
+</html>
